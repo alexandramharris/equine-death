@@ -28,20 +28,34 @@ year <- df %>%
   rename(Year = year, `Horse deaths` = total_deaths)
 
 # Incidents at Saratoga Race Course
-incidents <- df %>% 
+incidents_saratoga <- df %>% 
   filter(track == "Saratoga Racecourse (NYRA)") %>% 
   group_by(incident_type = str_to_title(incident_type)) %>%   
   summarize(total_incidents = n()) %>% 
   arrange(desc(total_incidents)) %>% 
   rename(`Incident` = incident_type, Total = total_incidents)
 
-# Track deaths at each location
+# Division breakdown
+division <- df %>% 
+  group_by(division, incident_type) %>% 
+  summarize(total_incidents = n()) %>% 
+  rename(Division = division, `Incident` = incident_type, Total = total_incidents) %>% 
+  mutate(Incident = paste0(str_to_upper(str_sub(Incident,1,1)), str_to_lower(str_sub(Incident,2,nchar(Incident))))) %>% 
+  pivot_wider(names_from = Division, values_from = Total) %>% 
+  arrange(desc(`Harness` + `Thoroughbred`)) %>% 
+  filter(`Harness` + `Thoroughbred` >= 100)
+
+# Reorder for graphic
+division <- division %>% 
+  select(Incident, Thoroughbred, Harness)
+
+# Track and division deaths at each location
 track <- df %>% 
-  filter(incident_type =="EQUINE DEATH") %>% 
-  group_by(track) %>% 
+  filter(incident_type =="EQUINE DEATH") %>%
+  group_by(track, division) %>% 
   summarize(total_deaths = n()) %>% 
   arrange(desc(total_deaths)) %>% 
-  rename(Track = track, `Horse deaths` = total_deaths)
+  rename(Track = track, Division = division, `Horse deaths` = total_deaths)
 
 # Import track locations
 locations <- read.csv("track_locations.csv")
@@ -100,7 +114,8 @@ auth_google(email = "alexandra.harris@timesunion.com",
 
 sheet_write(df, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "data")
 sheet_write(year, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "year")
-sheet_write(incidents, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "incidents")
+sheet_write(incidents_saratoga, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "incidents_saratoga")
 sheet_write(table_cache, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "table")
 sheet_write(trainer, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "trainer")
 sheet_write(track, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "track")
+sheet_write(division, ss = "https://docs.google.com/spreadsheets/d/1c8Gpg1iQRu5hJ5xxe-xBzhqIoPOC3zhpE0-vzG-95HI", sheet = "division")
