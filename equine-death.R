@@ -79,11 +79,12 @@ trainer <- df %>%
 # Searchable table
 table <- df %>% 
   filter(incident_type =="EQUINE DEATH" & track == "Saratoga Racecourse (NYRA)") %>%
-  select(horse, incident_date, incident_description) %>% 
+  select(horse, incident_date, trainer, incident_description) %>% 
+  mutate(trainer = str_to_title(trainer)) %>% 
   mutate(horse = ifelse(str_detect(horse, "\\("), horse, str_to_title(horse))) %>% 
   arrange(desc(incident_date)) %>% 
   mutate(incident_date = format(incident_date, "%B %e, %Y")) %>% 
-  rename(Horse = horse, Date = incident_date, Death = incident_description)
+  rename(Horse = horse, Trainer = trainer, Date = incident_date, Death = incident_description)
 
 # Assign ID for cache
 table$id <- seq.int(nrow(table), 1)
@@ -97,11 +98,11 @@ new_rows <- table[which(! table$id %in% table_cache$id), ]
 # Append new rows
 table_cache <- rbind(new_rows, table_cache)
 
-# Remove ID
-table_cache$id <- NULL
-
 # Save cache
 write.csv(table_cache, "table_cache.csv", row.names=FALSE)
+
+# Remove ID
+table_cache$id <- NULL
 
 
 # Export ----
